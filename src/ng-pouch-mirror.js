@@ -30,7 +30,8 @@ angular.module('pouchMirror', [])
       // First copy the diskDb to memory, and then sync changes in memory to diskDb
       memoryDb = new PouchDB(localDbName + '_mem', {adapter: 'memory'});
       diskDb = new PouchDB(localDbName);
-      diskDb.replicate.to(memoryDb).then(function() {
+      diskDb.replicate.to(memoryDb).on('complete', function(){
+        $rootScope.$broadcast('pm:update', localDbName, 'mem_ready', getStatus());
         memoryDb.replicate.to(diskDb, {live: true});
         startSync();
       });
@@ -103,6 +104,8 @@ angular.module('pouchMirror', [])
               active = false;
               status = 'error';
               $rootScope.$broadcast('pm:error', localDbName, err, getStatus());
+            }).on('change', function(){
+              $rootScope.$broadcast('pm:update', localDbName, 'change', getStatus());
             });
           syncing = true;
           status = 'syncing';
